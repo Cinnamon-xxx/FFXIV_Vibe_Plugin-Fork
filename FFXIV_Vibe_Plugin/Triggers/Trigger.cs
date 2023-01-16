@@ -44,6 +44,7 @@ namespace FFXIV_Vibe_Plugin.Triggers {
     public float StopAfter = 0;
     public int Priority = 0;
     public readonly List<int> AllowedChatTypes = new ();
+    public bool UseAlternativeSources = false;
 
     // Devices associated with this trigger
     public List<TriggerDevice> Devices = new();

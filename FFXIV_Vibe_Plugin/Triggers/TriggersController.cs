@@ -83,28 +83,33 @@ namespace FFXIV_Vibe_Plugin.Triggers {
         // Ignore if the player name is not authorized
         if(!Helpers.RegExpMatch(this.Logger, spell.Player.Name, trigger.FromPlayerName)) { continue; }
 
-        if(trigger.Kind == (int)KIND.Spell) {
-          
-          if(!Helpers.RegExpMatch(this.Logger, spellName, trigger.SpellText)) { continue; }
+        if(trigger.ActionEffectType != (int)Structures.ActionEffectType.Any && trigger.ActionEffectType != (int)spell.ActionEffectType && !UsesAlternativeSources(trigger,spell)) {
+        continue;
+        }
 
-          if(trigger.ActionEffectType != (int)Structures.ActionEffectType.Any && trigger.ActionEffectType != (int)spell.ActionEffectType) {
-            continue;
+        FFXIV_Vibe_Plugin.Triggers.DIRECTION direction = this.GetSpellDirection(spell);
+
+        if (trigger.Direction != (int)FFXIV_Vibe_Plugin.Triggers.DIRECTION.Any && (int)direction != trigger.Direction) { continue; }
+
+        if (trigger.ActionEffectType == (int)Structures.ActionEffectType.Damage || trigger.ActionEffectType == (int)Structures.ActionEffectType.Heal) {
+            if (trigger.AmountInPercentage)
+            {
+                float playerHP = this.PlayerStats.GetMaxHP();
+                float spellPercentage = (spell.AmountAverage / playerHP) * 100;
+                if (trigger.AmountMinValue >= spellPercentage) { continue; }
+                if (trigger.AmountMaxValue <= spellPercentage) { continue; }
+            }
+            else
+            {
+                if (trigger.AmountMinValue >= spell.AmountAverage) { continue; }
+                if (trigger.AmountMaxValue <= spell.AmountAverage) { continue; }
+            }
           }
-
-          if(trigger.ActionEffectType == (int)Structures.ActionEffectType.Damage || trigger.ActionEffectType == (int)Structures.ActionEffectType.Heal) {
-            if(trigger.AmountMinValue >= spell.AmountAverage) { continue; }
-            if(trigger.AmountMaxValue <= spell.AmountAverage) { continue; }
-          }
-
-          FFXIV_Vibe_Plugin.Triggers.DIRECTION direction = this.GetSpellDirection(spell);
-
-          if(trigger.Direction != (int)FFXIV_Vibe_Plugin.Triggers.DIRECTION.Any && (int)direction != trigger.Direction) { continue;}
           if(this.Profile.VERBOSE_SPELL) {
             this.Logger.Debug($"SpellTrigger matched {spell}, adding {trigger}");
           }
           triggers.Add(trigger);
         }
-      }
       return triggers;
     }
 
@@ -153,6 +158,18 @@ namespace FFXIV_Vibe_Plugin.Triggers {
     }
   }
 
-  
+public bool UsesAlternativeSources(Trigger trigger, Structures.Spell spell)
+{
+    if (trigger.UseAlternativeSources)
+    {
+        if (trigger.ActionEffectType == (int)Structures.ActionEffectType.Damage)
+        {
+            if (spell.ActionEffectType == Structures.ActionEffectType.ParriedDamage
+            || spell.ActionEffectType == Structures.ActionEffectType.BlockedDamage)
+            { return true; }
+        }
+    }
+    return false;
+}
 
 }

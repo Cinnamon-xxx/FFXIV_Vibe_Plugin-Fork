@@ -432,45 +432,53 @@ namespace FFXIV_Vibe_Plugin {
         ImGui.InputText("###TriggersSelector_SearchBar", ref this.CURRENT_TRIGGER_SELECTOR_SEARCHBAR, 200);
         ImGui.Spacing();
         
-        for(int triggerIndex=0; triggerIndex<triggers.Count; triggerIndex++) {
-          Triggers.Trigger trigger = triggers[triggerIndex];
-          if(trigger != null) {
-            string enabled = trigger.Enabled ? "" : "[disabled]";
-            string kindStr = $"{Enum.GetName(typeof(Triggers.KIND), trigger.Kind)}";
-            if(kindStr != null) {
-              kindStr = kindStr.ToUpper();
-            }
-            string triggerName = $"{enabled}[{ kindStr}] {trigger.Name}";
-            string triggerNameWithId = $"{triggerName}###{ trigger.Id}";
-            if(!Helpers.RegExpMatch(this.Logger, triggerName, this.CURRENT_TRIGGER_SELECTOR_SEARCHBAR)) {
-              continue;
-            }
-            
-            if(ImGui.Selectable($"{triggerNameWithId}", selectedId == trigger.Id)) { // We don't want to show the ID
-              this.SelectedTrigger = trigger;
-              this.triggersViewMode = "edit";
-            }
-            if(ImGui.IsItemHovered()) {
-              ImGui.SetTooltip($"{triggerName}");
-            }
-            if(ImGui.BeginDragDropSource()) {
-              this._tmp_currentDraggingTriggerIndex = triggerIndex;
-              ImGui.Text($"Dragging: {triggerName}");
-              ImGui.SetDragDropPayload($"{triggerNameWithId}", (IntPtr)(&triggerIndex), sizeof(int));
-              ImGui.EndDragDropSource();
-            }
-            if(ImGui.BeginDragDropTarget()) {
-              if(this._tmp_currentDraggingTriggerIndex > -1 &&   ImGui.IsMouseReleased(ImGuiMouseButton.Left)) {
-                int srcIndex = this._tmp_currentDraggingTriggerIndex;
-                int targetIndex = triggerIndex;
-                (triggers[srcIndex], triggers[targetIndex]) = (triggers[targetIndex], triggers[srcIndex]);
-                this._tmp_currentDraggingTriggerIndex = -1;
-                this.Configuration.Save();
-              }
-              ImGui.EndDragDropTarget();
-            }
+        for (int triggerIndex = 0; triggerIndex < triggers.Count; triggerIndex++)
+        {
+            Triggers.Trigger trigger = triggers[triggerIndex];
+            if (trigger != null)
+            {
+                string enabled = trigger.Enabled ? "" : "[disabled]";
+                string kindStr = $"{Enum.GetName(typeof(Triggers.KIND), trigger.Kind)}";
+                if (kindStr != null)
+                {
+                    kindStr = kindStr.ToUpper();
+                }
+                string triggerName = $"{enabled}[{kindStr}] {trigger.Name}";
+                string triggerNameWithId = $"{triggerName}###{trigger.Id}";
+                if (!Helpers.RegExpMatch(this.Logger, triggerName, this.CURRENT_TRIGGER_SELECTOR_SEARCHBAR))
+                {
+                    continue;
+                }
 
-          }
+                if (ImGui.Selectable($"{triggerNameWithId}", selectedId == trigger.Id))
+                { // We don't want to show the ID
+                    this.SelectedTrigger = trigger;
+                    this.triggersViewMode = "edit";
+                }
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.SetTooltip($"{triggerName}");
+                }
+                if (ImGui.BeginDragDropSource())
+                {
+                    this._tmp_currentDraggingTriggerIndex = triggerIndex;
+                    ImGui.Text($"Dragging: {triggerName}");
+                    ImGui.SetDragDropPayload($"{triggerNameWithId}", (IntPtr)(&triggerIndex), sizeof(int));
+                    ImGui.EndDragDropSource();
+                }
+                if (ImGui.BeginDragDropTarget())
+                {
+                    if (this._tmp_currentDraggingTriggerIndex > -1 && ImGui.IsMouseReleased(ImGuiMouseButton.Left))
+                    {
+                        int srcIndex = this._tmp_currentDraggingTriggerIndex;
+                        int targetIndex = triggerIndex;
+                        (triggers[srcIndex], triggers[targetIndex]) = (triggers[targetIndex], triggers[srcIndex]);
+                        this._tmp_currentDraggingTriggerIndex = -1;
+                        this.Configuration.Save();
+                    }
+                    ImGui.EndDragDropTarget();
+                }
+            }
         }
         ImGui.EndChild();
       }
@@ -773,6 +781,17 @@ namespace FFXIV_Vibe_Plugin {
                 }
               }
               ImGui.TableNextRow();
+                //Trigger Alternative Sources
+                if (this.SelectedTrigger.ActionEffectType == (int)Structures.ActionEffectType.Damage)
+                {
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"Consider mitigated DMG?");
+                    ImGui.TableNextColumn();
+                    ImGui.Checkbox("###TRIGGER_USE_ALTERNATIVE_SOURCES", ref this.SelectedTrigger.UseAlternativeSources);
+                    ImGui.SameLine();
+                    ImGuiComponents.HelpMarker("Aditionaly check damage recieved after parry / block modifiers");
+                    ImGui.TableNextRow();
+                }
             }
             ImGui.EndTable();
 
@@ -796,8 +815,12 @@ namespace FFXIV_Vibe_Plugin {
                   this.Configuration.Save();
                 }
               };
-
-              string[] patternNames = this.Patterns.GetAllPatterns().Select(p => p.Name).ToArray();
+                ImGui.SameLine();
+                if (ImGui.Button("Test Trigger", new Vector2(100, 24)))
+                {
+                    this.DevicesController.SendTrigger(this.SelectedTrigger);
+                }
+                string[] patternNames = this.Patterns.GetAllPatterns().Select(p => p.Name).ToArray();
 
               for(int indexDevice = 0; indexDevice < triggerDevices.Count; indexDevice++) {
                 string prefixLabel = $"###TRIGGER_FORM_COMBO_DEVICE_${indexDevice}";

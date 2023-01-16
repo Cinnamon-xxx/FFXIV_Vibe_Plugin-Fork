@@ -348,7 +348,7 @@ namespace FFXIV_Vibe_Plugin.Device {
       bool forceStop = false;
       Thread tStopAfter = new(delegate () {
         if(StopAfter == 0) { return; }
-        Thread.Sleep((int)StopAfter * 1000);
+        Thread.Sleep((int)(StopAfter*10) * 100);
         if(startedUnixTime == this.CurrentDeviceAndMotorPlaying[deviceAndMotorId]) {
           forceStop = true;
           this.SendCommand(command, device, 0, motorId);
@@ -359,7 +359,7 @@ namespace FFXIV_Vibe_Plugin.Device {
 
       Thread t = new(delegate () {
         
-        Thread.Sleep((int)StartAfter * 1000);
+        Thread.Sleep((int)(StopAfter*10) * 100);
         
         // Stop exectution if a new pattern is sent to the same device and motor.
         if(startedUnixTime != this.CurrentDeviceAndMotorPlaying[deviceAndMotorId]) {
